@@ -2943,7 +2943,7 @@ def start(message):
             "referral_points_granted": False # 🔑 علامة لمنع تكرار منح النقاط
         }
         
-        if is_admin:
+        if is_admin(message.from_user.id):
             bot.send_message(message.chat.id, "🎉 تهانينا! تم التعرف عليك كأدمن البوت.", parse_mode="Markdown")
 
         # 🛑 لا يتم تنفيذ execute_referral هنا، نؤجلها إلى بعد الاشتراك أو في نهاية الدالة
