@@ -1088,7 +1088,7 @@ STORE_PRODUCTS = {
 # ----------------------------------------------------
 # 1. مشغل بدء عملية إدارة الوكلاء (الزر النصي)
 # ----------------------------------------------------
-@bot.message_handler(func=lambda message: message.text in ["➕ إضافة وكيل", "➖ إزالة وكيل"] and message.from_user.id == ADMIN_ID)
+@bot.message_handler(func=lambda message: message.text in ["➕ إضافة وكيل", "➖ إزالة وكيل"] and message.from_user.id == ADMIN_IDS)
 def agent_management_reply_buttons(message):
     chat_id = message.chat.id
     
@@ -1120,7 +1120,7 @@ def agent_management_reply_buttons(message):
 # ----------------------------------------------------
 # 2. مشغل الإجراءات المتعددة الخطوات (يستجيب للرسائل اللاحقة)
 # ----------------------------------------------------
-@bot.message_handler(func=lambda message: message.chat.id in user_states and message.from_user.id == ADMIN_ID)
+@bot.message_handler(func=lambda message: message.chat.id in user_states and message.from_user.id == ADMIN_IDS)
 def agent_management_message_handler(message):
     chat_id = message.chat.id
     user_state = user_states.get(chat_id, {})
@@ -1242,7 +1242,7 @@ def agent_management_message_handler(message):
 @bot.callback_query_handler(func=lambda call: call.data in ['admin_add_agent', 'admin_remove_agent'])
 def agent_management_callbacks(call):
     # 🛑 تم تصحيح هذا المشغل أيضاً لضمان المقارنة الصحيحة
-    if call.from_user.id != ADMIN_ID:
+    if call.from_user.id != ADMIN_IDS:
         bot.answer_callback_query(call.id, "❌ أنت لست المسؤول.")
         return
 
@@ -3701,7 +3701,7 @@ def handle_agent_funding_button(message):
 def manage_agent_balance_start(message):
     sender_id = message.from_user.id # 🛑 آيدي المرسل (رقم)
     
-    if sender_id != ADMIN_ID: 
+    if sender_id != ADMIN_IDS: 
         return 
 
     markup = types.InlineKeyboardMarkup(row_width=1)
