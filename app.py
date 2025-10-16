@@ -355,7 +355,7 @@ threading.Thread(target=auto_add_points, daemon=True).start()
 
 
 
-@bot.message_handler(func=lambda message: message.text == "📄 جلب الملفات" and message.from_user.id == ADMIN_ID)
+@bot.message_handler(func=lambda message: message.text == "📄 جلب الملفات" and is_admin(message.from_user.id))
 def send_all_files(message):
     chat_id = message.chat.id
     
@@ -1675,7 +1675,7 @@ def show_agent_details(call):
     else:
         bot.answer_callback_query(call.id, "❌ لم يتم العثور على معلومات هذا الوكيل.")    
 ##
-@bot.message_handler(func=lambda message: message.text == "انشاء كوبون" and message.chat.id == ADMIN_ID)
+@bot.message_handler(func=lambda message: message.text == "انشاء كوبون" and is_admin(message.from_user.id))
 def start_create_coupon(message):
     """بدء عملية إنشاء الكوبون وطلب الرمز."""
     global coupon_temp_data
