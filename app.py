@@ -1088,8 +1088,10 @@ STORE_PRODUCTS = {
 # ----------------------------------------------------
 # 1. مشغل بدء عملية إدارة الوكلاء (الزر النصي)
 # ----------------------------------------------------
-@bot.message_handler(func=lambda message: message.text in ["➕ إضافة وكيل", "➖ إزالة وكيل"] and message.from_user.id == ADMIN_IDS)
+# 💡 التصحيح المقترح: يجب استخدام الدالة is_admin هنا
+@bot.message_handler(func=lambda message: message.text in ["➕ إضافة وكيل", "➖ إزالة وكيل"] and is_admin(message.from_user.id))
 def agent_management_reply_buttons(message):
+    # ... بقية الكود
     chat_id = message.chat.id
     
     if message.text == '➕ إضافة وكيل':
@@ -1120,8 +1122,10 @@ def agent_management_reply_buttons(message):
 # ----------------------------------------------------
 # 2. مشغل الإجراءات المتعددة الخطوات (يستجيب للرسائل اللاحقة)
 # ----------------------------------------------------
-@bot.message_handler(func=lambda message: message.chat.id in user_states and message.from_user.id == ADMIN_IDS)
+# 💡 التصحيح المقترح: يجب استخدام is_admin هنا
+@bot.message_handler(func=lambda message: message.chat.id in user_states and is_admin(message.from_user.id))
 def agent_management_message_handler(message):
+# ...
     chat_id = message.chat.id
     user_state = user_states.get(chat_id, {})
     
@@ -3694,15 +3698,18 @@ def admin_panel(message):
 
 <b>🆔 آيديك:</b> <code>{user_id}</code>
 """, reply_markup=markup, parse_mode="HTML")
-@bot.message_handler(func=lambda message: message.text == "تمويل وكيل")
+@bot.message_handler(func=lambda message: message.text == "تمويل وكيل" and is_admin(message.from_user.id))
 def handle_agent_funding_button(message):
+    # 📌 لا تحتاج لفحص صلاحية الأدمن هنا إذا تم فحصها في message_handler
     manage_agent_balance_start(message)
 
 def manage_agent_balance_start(message):
-    sender_id = message.from_user.id # 🛑 آيدي المرسل (رقم)
+    sender_id = message.from_user.id # آيدي المرسل (رقم)
     
-    if sender_id != ADMIN_IDS: 
-        return 
+    # 💡 التصحيح: استخدام الدالة is_admin أو التحقق يدوياً
+    if not is_admin(sender_id):
+        # يمكنك إضافة رسالة خطأ هنا إذا أردت
+        return bot.send_message(message.chat.id, "❌ صلاحيات غير كافية.") 
 
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
@@ -3715,7 +3722,6 @@ def manage_agent_balance_start(message):
                      "🛠 **لوحة تحكم أرصدة الوكلاء**\n\nالرجاء اختيار نوع العملية:", 
                      reply_markup=markup, 
                      parse_mode="Markdown")
-
 # --- 3. معالجات الأزرار الداخلية (Callback Handlers) ---
 
 @bot.callback_query_handler(func=lambda call: call.data == "admin_add_agent_balance")
