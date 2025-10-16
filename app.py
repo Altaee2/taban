@@ -3166,14 +3166,17 @@ RULES_MESSAGE = """
 8. **تفعيل الحساب:** في حال لم يقم المستخدم بالسحب خلال مدة أقصاها **45 يوم**، يتم حظر الحساب بشكل تلقائي.
 """
 agent_temp_data = {} 
-@bot.message_handler(func=lambda message: message.text == "معلومات الوكيل") # 🛑 تم التعديل إلى زر نصي
+@bot.message_handler(func=lambda message: message.text == "معلومات الوكيل" and is_admin(message.from_user.id))
 def start_get_agent_info(message):
     sender_id = message.from_user.id 
+    chat_id = message.chat.id
+    
+    # 💡 تم استبدال الفحص اليدوي بالدالة is_admin في message_handler لضمان عملها
+    # 💡 لا حاجة للسطر: if sender_id != ADMIN_ID: return 
+    
+    # تحويل الآيدي إلى نص ليتطابق مع المفاتيح في agent_temp_data
+    str_sender_id = str(sender_id) 
 
-    if sender_id != ADMIN_ID:
-        return 
-
-    str_sender_id = str(sender_id)
     if str_sender_id in agent_temp_data:
         del agent_temp_data[str_sender_id]
 
@@ -3182,22 +3185,23 @@ def start_get_agent_info(message):
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("❌ إلغاء العملية", callback_data="cancel_agent_info_get"))
 
-    msg = bot.send_message(message.chat.id, 
-                           "الرجاء إرسال آيدي الوكيل الذي تريد عرض معلوماته:", 
+    msg = bot.send_message(chat_id, 
+                           "الرجاء إرسال **آيدي** الوكيل الذي تريد عرض معلوماته:", 
                            reply_markup=markup,
                            parse_mode="Markdown")
     
     bot.register_next_step_handler(msg, get_and_display_agent_info)
 
-@bot.callback_query_handler(func=lambda call: call.data == "cancel_agent_info_get")
+@bot.callback_query_handler(func=lambda call: call.data == "cancel_agent_info_get" and is_admin(call.from_user.id))
 def cancel_get_agent_info_callback(call):
     sender_id = str(call.from_user.id)
     if sender_id in agent_temp_data and agent_temp_data[sender_id].get('action') == 'get_agent_info':
         del agent_temp_data[sender_id]
         
-        bot.edit_message_text("❌ تم إلغاء عملية جلب معلومات الوكيل.", 
-                              call.message.chat.id, 
-                              call.message.message_id)
+        # 💡 تعديل طريقة عرض الإلغاء لـ Inline Query
+        bot.edit_message_text(chat_id=call.message.chat.id, 
+                              message_id=call.message.message_id,
+                              text="❌ تم إلغاء عملية جلب معلومات الوكيل.")
                               
         bot.answer_callback_query(call.id, "تم الإلغاء.")
     else:
@@ -3207,6 +3211,13 @@ def cancel_get_agent_info_callback(call):
 def get_and_display_agent_info(message):
     sender_id = str(message.from_user.id)
     
+    # 💡 فحص ما إذا كان الأدمن قد ألغى العملية عبر زر الإلغاء (كتابياً)
+    if message.text.strip().lower() == 'إلغاء' or message.text.startswith('/start'):
+        if sender_id in agent_temp_data:
+            del agent_temp_data[sender_id]
+        return bot.send_message(message.chat.id, "❌ تم إلغاء العملية.")
+
+
     if sender_id not in agent_temp_data or agent_temp_data[sender_id].get('action') != 'get_agent_info':
         return bot.send_message(message.chat.id, "❌ انتهت صلاحية العملية. يرجى البدء مجدداً بزر 'معلومات الوكيل'.")
 
@@ -3218,19 +3229,19 @@ def get_and_display_agent_info(message):
         del agent_temp_data[sender_id]
         return bot.send_message(message.chat.id, "❌ خطأ داخلي: دالة load_agents غير معرفة.")
     
-    del agent_temp_data[sender_id] 
-
+    del agent_temp_data[sender_id] # 💡 تم الانتهاء من العملية
+    
+    # 💡 التصحيح: يجب فحص الآيدي كـ نص لأنه يتم تخزينه كنص في agents.json
     if not target_agent_id.isdigit():
         return bot.send_message(message.chat.id, "❌ الآيدي غير صحيح. يجب أن يكون رقماً.")
         
     if target_agent_id not in agents:
         return bot.send_message(message.chat.id, 
-                                f"❌ لا يوجد وكيل مسجل بالآيدي: <code>{target_agent_id}</code>.", 
-                                parse_mode="HTML") # 🛑 استخدام HTML هنا
+                                 f"❌ لا يوجد وكيل مسجل بالآيدي: <code>{target_agent_id}</code>.", 
+                                 parse_mode="HTML")
 
     agent_data = agents[target_agent_id]
     
-    # 🛑 التنسيق الجديد: استخدام وسم <b> للخط الغامق و <code> للآيدي و <br> للأسطر الجديدة
     info_msg = (
         f"📋 <b>معلومات الوكيل:</b>\n"
         f"┄┄┄┄┄┄┄┄┄┄┄\n"
@@ -3243,7 +3254,6 @@ def get_and_display_agent_info(message):
         f"<b>📢 رابط القناة:</b> <a href='{agent_data.get('channel_link', '#')}'>اضغط هنا</a>"
     )
     
-    # يجب أن يكون parse_mode="HTML" لاستخدام <b> و <a>
     bot.send_message(message.chat.id, info_msg, parse_mode="HTML")
 # --- معالج الـ Callback لـ "من نحن؟" (تم التعديل) ---
 @bot.callback_query_handler(func=lambda call: call.data == "about_us_inline")
